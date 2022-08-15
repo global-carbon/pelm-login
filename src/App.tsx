@@ -34,7 +34,7 @@ const config: Config = {
 };
 
 function App() {
-  const { open, ready, error } = useConnect(config);
+  const { open, ready } = useConnect(config);
 
   return (
     <Box>
