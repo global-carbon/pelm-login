@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import "./App.css";
 import { useConnect, Config } from "react-pelm-connect";
 import { Button, Typography, Grid, Box, Paper, Stack } from "@mui/material";
+import { v4 as uuidv4 } from "uuid";
 
 var Airtable = require("airtable");
 var base = new Airtable({ apiKey: "keyuxFeFBRShGCiWR" }).base(
@@ -10,6 +11,33 @@ var base = new Airtable({ apiKey: "keyuxFeFBRShGCiWR" }).base(
 
 function App() {
   const [success, setSuccess] = useState(false);
+  const [accessToken, setAccessToken] = useState("");
+
+  const getAccessToken = async () => {
+    var myHeaders = new Headers();
+    myHeaders.append("Pelm-Client-Id", "7318751f-c337-447d-b7ec-481c6060431e");
+    myHeaders.append(
+      "Pelm-Secret",
+      "b8d8c8a4575f75cb60cfaae63114fd518c3eab886d386ee7abd45f2a9b417b68"
+    );
+
+    var formdata = new FormData();
+    formdata.append("user_id", uuidv4());
+
+    var requestOptions = {
+      method: "POST",
+      headers: myHeaders,
+      body: formdata,
+    };
+
+    const result = await fetch(
+      "https://api.pelm.com/auth/connect-token",
+      requestOptions
+    );
+
+    const json = await result.json();
+    setAccessToken(json.connect_token);
+  };
 
   const sendToAirtable = (data: string) => {
     base("Users").create(
@@ -69,8 +97,7 @@ function App() {
   };
 
   const config: Config = {
-    connectToken:
-      "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJpc3MiOiJhdXRoLXNlcnZlciIsImNyZWF0ZWRfYXQiOjE2NjAwNzIyNjcuNjEwNDg0MSwidXNlciI6IjAwMDAwMDEiLCJjbGllbnRfaWQiOiI3MzE4NzUxZi1jMzM3LTQ0N2QtYjdlYy00ODFjNjA2MDQzMWUifQ.yecrkuGlQ1AuZYo33sQhduKnlndLnl-GvLttBwml83PgZFUSblDTB9x65Y_8c20XSI7a1sxO1hCil8m2Sbg2kjZCY-Hbfa7sKjmcUbhNIBfgwxZOG70SOgXENJoDcyhxvgSe67opC-ylPLrkTWWbMSzT6c5WuVIz6GtMzX3PlroBS884M7QkTukme-b4qc3tuwiEAxF0HPnpdr1RMDRD35MfeKWLqU91HeNwVCc-lKaYmZk3uVs_bEsJibsuSg41LgVa1RiUjM4m8zM8CexpWD8cUJgAtdgoodZiQ6N0CW11Vbr6uvhqcLgaahjp8zEVq7lN5oXDk6xoyRHPyenoSA",
+    connectToken: accessToken,
     onSuccess: (authorizationCode: string) => {
       console.log(authorizationCode);
       sendToAirtable(authorizationCode);
@@ -79,6 +106,10 @@ function App() {
     },
     onExit: () => {},
   };
+
+  useEffect(() => {
+    getAccessToken();
+  }, []);
 
   const { open, ready } = useConnect(config);
 
